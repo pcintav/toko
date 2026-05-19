@@ -1,0 +1,3 @@
+# Abaikan isi folder upload (biner), tetap simpan folder di repo
+*
+!.gitignore

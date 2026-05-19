@@ -1,0 +1,6 @@
+{
+  "frontend/src/api/http.js": "/**\n * http.js — dasar komunikasi HTTP ke backend (file buatan).\n *\n * Fungsi:\n * - API_BASE: alamat server dari .env.development (VITE_API_URL).\n * - authHeaders(): menambah header Authorization jika user sudah login.\n * - apiRequest(): wrapper fetch — kirim JSON, tangani error, kembalikan body JSON.\n *\n * Dipakai oleh client.js, adminApi.js, dan pembeliApi.js.\n */\n",
+  "frontend/src/api/client.js": "/**\n * client.js — API publik tanpa wajib login (file buatan).\n *\n * Fungsi: memanggil endpoint /api/users/... untuk beranda, katalog,\n * artikel, login, register, dan form kontak.\n *\n * Semua method memakai apiRequest() dari http.js.\n */\n",
+  "frontend/src/api/adminApi.js": "/**\n * adminApi.js — API panel admin (file buatan).\n *\n * Fungsi: daftar fungsi untuk CRUD produk, pembeli, pesanan, artikel,\n * kontak, info toko, profil admin, upload gambar.\n *\n * Setiap request ke /api/admin/* otomatis membawa token JWT admin (via http.js).\n */\n",
+  "frontend/src/api/pembeliApi.js": "/**\n * pembeliApi.js — API area pembeli yang login (file buatan).\n *\n * Fungsi: dashboard, belanja, pesanan, profil, upload gambar bukti bayar.\n * Endpoint: /api/users/... dengan token role pembeli.\n */\n"
+}
