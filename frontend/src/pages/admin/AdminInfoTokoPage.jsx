@@ -3,6 +3,7 @@
  * URL: `/admin/info-toko` — adminApi.updateInfoToko, AdminShopContext.reloadInfo.
  */
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
 import { useAdminGuard } from '../../hooks/useAdminGuard';
 import { useAdminShop } from '../../context/AdminShopContext';
@@ -20,10 +21,6 @@ const FORM_KOSONG = {
   alamat_toko: '',
   email_toko: '',
   tlp_toko: '',
-  nama_bank_a: '',
-  nama_bank_b: '',
-  no_rek_a: '',
-  no_rek_b: '',
   jam_buka: '8',
   jam_tutup: '20',
   logo_wa: '',
@@ -43,10 +40,6 @@ function mapDbKeForm(d) {
     alamat_toko: d.alamat_toko || '',
     email_toko: d.email_toko || '',
     tlp_toko: d.tlp_toko != null ? String(d.tlp_toko) : '',
-    nama_bank_a: d.nama_bank_a || '',
-    nama_bank_b: d.nama_bank_b || '',
-    no_rek_a: d.no_rek_a != null ? String(d.no_rek_a) : '',
-    no_rek_b: d.no_rek_b != null ? String(d.no_rek_b) : '',
     jam_buka: d.jam_buka != null ? String(d.jam_buka) : '8',
     jam_tutup: d.jam_tutup != null ? String(d.jam_tutup) : '20',
     logo_wa: d.logo_wa || '',
@@ -115,8 +108,6 @@ export default function AdminInfoTokoPage() {
       const payload = {
         ...form,
         tlp_toko: parseInt(String(form.tlp_toko).replace(/\D/g, ''), 10),
-        no_rek_a: parseInt(String(form.no_rek_a).replace(/\D/g, ''), 10),
-        no_rek_b: parseInt(String(form.no_rek_b).replace(/\D/g, ''), 10),
         jam_buka: parseInt(form.jam_buka, 10),
         jam_tutup: parseInt(form.jam_tutup, 10),
       };
@@ -139,7 +130,7 @@ export default function AdminInfoTokoPage() {
     <div className="admin-info-toko-page">
       <PageHeader
         title="Info toko"
-        subtitle="Ubah data beranda (tentang, banner), logo, kontak, dan pembayaran"
+        subtitle="Ubah data beranda (tentang, banner), logo, dan kontak. Rekening bank: menu Bank."
       />
 
       {baru && (
@@ -147,6 +138,11 @@ export default function AdminInfoTokoPage() {
           Belum ada data toko. Isi form lalu klik <strong>Simpan perubahan</strong>.
         </div>
       )}
+      <div className="alert alert-light border">
+        Rekening transfer dikelola di menu{' '}
+        <Link to="/admin/bank">Bank</Link>
+        {' '}(tabel <code>bank</code>), bukan di form ini.
+      </div>
       {error && <div className="alert alert-danger">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
@@ -215,27 +211,6 @@ export default function AdminInfoTokoPage() {
                     <p className="text-secondary small mb-2">
                       Tampil di web: <strong>{jamTampil || '—'}</strong>
                     </p>
-                  </div>
-                </div>
-              </FormSection>
-
-              <FormSection title="Rekening pembayaran">
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <label className="form-label">Bank 1</label>
-                    <input className="form-control" value={form.nama_bank_a} onChange={set('nama_bank_a')} required />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">No. rekening 1</label>
-                    <input className="form-control" value={form.no_rek_a} onChange={set('no_rek_a')} required />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">Bank 2</label>
-                    <input className="form-control" value={form.nama_bank_b} onChange={set('nama_bank_b')} required />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">No. rekening 2</label>
-                    <input className="form-control" value={form.no_rek_b} onChange={set('no_rek_b')} required />
                   </div>
                 </div>
               </FormSection>

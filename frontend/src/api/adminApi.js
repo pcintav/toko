@@ -76,7 +76,31 @@ export const adminApi = {
   deleteKontak: (id) => apiRequest(`/api/admin/kontak/${id}`, { method: 'DELETE' }),
 
   // -------------------------------------------------------------------------
-  // Info toko — AdminInfoTokoPage & AdminShopContext
+  // Master data — kategori, pengiriman, bank (bukan ENUM hardcode)
+  // -------------------------------------------------------------------------
+  getKategori: () => apiRequest('/api/admin/kategori'),
+  createKategori: (payload) =>
+    apiRequest('/api/admin/kategori', { method: 'POST', body: JSON.stringify(payload) }),
+  updateKategori: (id, payload) =>
+    apiRequest(`/api/admin/kategori/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteKategori: (id) => apiRequest(`/api/admin/kategori/${id}`, { method: 'DELETE' }),
+
+  getPengiriman: () => apiRequest('/api/admin/pengiriman'),
+  createPengiriman: (payload) =>
+    apiRequest('/api/admin/pengiriman', { method: 'POST', body: JSON.stringify(payload) }),
+  updatePengiriman: (id, payload) =>
+    apiRequest(`/api/admin/pengiriman/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deletePengiriman: (id) => apiRequest(`/api/admin/pengiriman/${id}`, { method: 'DELETE' }),
+
+  getBank: () => apiRequest('/api/admin/bank'),
+  createBank: (payload) =>
+    apiRequest('/api/admin/bank', { method: 'POST', body: JSON.stringify(payload) }),
+  updateBank: (id, payload) =>
+    apiRequest(`/api/admin/bank/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteBank: (id) => apiRequest(`/api/admin/bank/${id}`, { method: 'DELETE' }),
+
+  // -------------------------------------------------------------------------
+  // Info toko — AdminInfoTokoPage & AdminShopContext (rekening di /bank)
   // -------------------------------------------------------------------------
   getInfoToko: () => apiRequest('/api/admin/info-toko'),
   updateInfoToko: (payload) =>

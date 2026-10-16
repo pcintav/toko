@@ -1,12 +1,12 @@
 /**
  * [buatan] CRUD produk toko.
- * URL: `/admin/produk` — adminApi produk, modal form, ImageUploadField.
+ * URL: `/admin/produk` — kategori dari GET /api/admin/kategori; stok + aktif.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
 import { useAdminList } from '../../hooks/useAdminList';
 import { useAdminGuard } from '../../hooks/useAdminGuard';
-import { KATEGORI_PRODUK } from '../../constants/adminEnums';
 import PageHeader from '../../components/admin/PageHeader';
 import LoadingBlock from '../../components/admin/LoadingBlock';
 import AdminModal from '../../components/admin/AdminModal';
@@ -17,24 +17,43 @@ import ImageUploadField from '../../components/admin/ImageUploadField';
 import { formatRupiah } from '../../utils/format';
 import { mediaUrl } from '../../utils/media';
 
-const empty = { nama_produk: '', deskripsi: '', harga: '', gambar: '', kategori: KATEGORI_PRODUK[0] };
+const emptyForm = {
+  nama_produk: '',
+  deskripsi: '',
+  harga: '',
+  gambar: '',
+  kategori: '',
+  stok: '10',
+  aktif: true,
+};
 
 export default function AdminProdukPage() {
   const { handleError } = useAdminGuard();
   const { rows, loading, error, reload } = useAdminList(adminApi.getProduk);
-  const [modal, setModal] = useState(null); // null | 'create' | { type: 'edit', id }
-  const [detail, setDetail] = useState(null); // baris untuk AdminDetailModal
-  const [form, setForm] = useState(empty); // isi form modal tambah/ubah
+  const [kategoriOpts, setKategoriOpts] = useState([]);
+  const [modal, setModal] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
-  // Buka modal kosong untuk produk baru
+  useEffect(() => {
+    adminApi
+      .getKategori()
+      .then((r) => setKategoriOpts(Array.isArray(r.data) ? r.data : []))
+      .catch((err) => {
+        if (!handleError(err)) setFormError(err.message);
+      });
+  }, [handleError]);
+
+  const defaultKategori = () => kategoriOpts[0]?.nama || '';
+
   const openCreate = () => {
-    setForm(empty);
+    setForm({ ...emptyForm, kategori: defaultKategori() });
+    setFormError('');
     setModal('create');
   };
 
-  // Muat detail lengkap lalu tampilkan modal read-only
   const openDetail = async (row) => {
     try {
       const r = await adminApi.getProdukById(row.id_produk);
@@ -44,7 +63,6 @@ export default function AdminProdukPage() {
     }
   };
 
-  // Muat data ke form lalu buka modal edit
   const openEdit = async (row) => {
     setFormError('');
     try {
@@ -55,7 +73,9 @@ export default function AdminProdukPage() {
         deskripsi: p.deskripsi ?? '',
         harga: String(p.harga ?? ''),
         gambar: p.gambar || '',
-        kategori: p.kategori ?? KATEGORI_PRODUK[0],
+        kategori: p.kategori ?? defaultKategori(),
+        stok: String(p.stok ?? 0),
+        aktif: Boolean(p.aktif),
       });
       setModal({ type: 'edit', id: row.id_produk });
     } catch (err) {
@@ -63,12 +83,17 @@ export default function AdminProdukPage() {
     }
   };
 
-  // POST create atau PUT update → tutup modal → reload tabel
   const onSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     setFormError('');
-    const payload = { ...form, harga: parseInt(form.harga, 10), gambar: form.gambar || null };
+    const payload = {
+      ...form,
+      harga: parseInt(form.harga, 10),
+      stok: parseInt(form.stok, 10),
+      aktif: Boolean(form.aktif),
+      gambar: form.gambar || null,
+    };
     try {
       if (modal === 'create') await adminApi.createProduk(payload);
       else await adminApi.updateProduk(modal.id, payload);
@@ -81,9 +106,8 @@ export default function AdminProdukPage() {
     }
   };
 
-  // DELETE setelah konfirmasi browser
   const onDelete = async (id) => {
-    if (!window.confirm('Hapus produk ini?')) return;
+    if (!window.confirm('Hapus produk ini? (Lebih aman nonaktifkan jika sudah ada pesanan.)')) return;
     try {
       await adminApi.deleteProduk(id);
       reload();
@@ -100,11 +124,22 @@ export default function AdminProdukPage() {
         title="Daftar produk"
         subtitle={`${rows.length} produk`}
         action={
-          <button type="button" className="btn btn-dark rounded-0" onClick={openCreate}>
+          <button
+            type="button"
+            className="btn btn-dark rounded-0"
+            onClick={openCreate}
+            disabled={kategoriOpts.length === 0}
+          >
             + Produk baru
           </button>
         }
       />
+      {kategoriOpts.length === 0 && (
+        <div className="alert alert-warning">
+          Belum ada kategori di tabel <code>kategori_produk</code>. Tambah dulu di menu{' '}
+          <Link to="/admin/kategori">Kategori</Link>.
+        </div>
+      )}
       {(error || formError) && <div className="alert alert-danger">{error || formError}</div>}
 
       <div className="admin-panel">
@@ -116,19 +151,21 @@ export default function AdminProdukPage() {
                 <th>Nama</th>
                 <th>Kategori</th>
                 <th>Harga</th>
+                <th>Stok</th>
+                <th>Status</th>
                 <th className="col-actions">Tindakan</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-secondary">
+                  <td colSpan={7} className="text-secondary">
                     Belum ada produk. Klik &quot;Produk baru&quot; untuk menambah.
                   </td>
                 </tr>
               ) : (
                 rows.map((row) => (
-                  <tr key={row.id_produk}>
+                  <tr key={row.id_produk} className={!row.aktif ? 'table-secondary' : undefined}>
                     <td>
                       <img src={mediaUrl(row.gambar)} alt="" width={48} height={48} className="admin-thumb" />
                     </td>
@@ -137,6 +174,10 @@ export default function AdminProdukPage() {
                     </td>
                     <td>{row.kategori}</td>
                     <td>{formatRupiah(row.harga)}</td>
+                    <td>{row.stok ?? 0}</td>
+                    <td>
+                      <span className="admin-badge">{row.aktif ? 'Aktif' : 'Nonaktif'}</span>
+                    </td>
                     <td className="col-actions">
                       <AdminRowActions
                         onDetail={() => openDetail(row)}
@@ -166,6 +207,8 @@ export default function AdminProdukPage() {
                 ['Nama', detail.nama_produk],
                 ['Kategori', detail.kategori],
                 ['Harga', formatRupiah(detail.harga)],
+                ['Stok', detail.stok ?? 0],
+                ['Status', detail.aktif ? 'Aktif' : 'Nonaktif'],
                 ['Deskripsi', detail.deskripsi],
               ]}
             />
@@ -175,6 +218,7 @@ export default function AdminProdukPage() {
 
       <AdminModal show={Boolean(modal)} title={modal === 'create' ? 'Tambah produk' : 'Ubah produk'} onClose={() => setModal(null)} wide>
         <form onSubmit={onSave}>
+          {formError && <div className="alert alert-danger">{formError}</div>}
           <div className="mb-3">
             <label className="form-label">Nama produk</label>
             <input className="form-control" value={form.nama_produk} onChange={(e) => setForm({ ...form, nama_produk: e.target.value })} required />
@@ -184,19 +228,43 @@ export default function AdminProdukPage() {
             <textarea className="form-control" rows={3} value={form.deskripsi} onChange={(e) => setForm({ ...form, deskripsi: e.target.value })} required />
           </div>
           <div className="row g-3">
-            <div className="col-md-6">
+            <div className="col-md-4">
               <label className="form-label">Harga (Rp)</label>
               <input type="number" min={0} className="form-control" value={form.harga} onChange={(e) => setForm({ ...form, harga: e.target.value })} required />
             </div>
-            <div className="col-md-6">
+            <div className="col-md-4">
+              <label className="form-label">Stok</label>
+              <input type="number" min={0} className="form-control" value={form.stok} onChange={(e) => setForm({ ...form, stok: e.target.value })} required />
+            </div>
+            <div className="col-md-4">
               <label className="form-label">Kategori</label>
-              <select className="form-select" value={form.kategori} onChange={(e) => setForm({ ...form, kategori: e.target.value })}>
-                {KATEGORI_PRODUK.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
+              <select
+                className="form-select"
+                value={form.kategori}
+                onChange={(e) => setForm({ ...form, kategori: e.target.value })}
+                required
+              >
+                {kategoriOpts.map((k) => (
+                  <option key={k.id} value={k.nama}>
+                    {k.nama}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="col-12">
+              <div className="form-check">
+                <input
+                  id="produk-aktif"
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={Boolean(form.aktif)}
+                  onChange={(e) => setForm({ ...form, aktif: e.target.checked })}
+                />
+                <label className="form-check-label" htmlFor="produk-aktif">
+                  Tampilkan di katalog (aktif)
+                </label>
+              </div>
+              <p className="form-text mb-0">Nonaktif = tidak muncul di beranda/toko/belanja, riwayat pesanan tetap aman.</p>
             </div>
           </div>
           <ImageUploadField

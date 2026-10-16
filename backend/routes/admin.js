@@ -21,6 +21,7 @@ const router = express.Router();
 // Controller = fungsi yang menangani req/res setelah URL cocok
 const { getMyProfile, updateMyProfile } = require("../controllers/usersController");
 const adminController = require("../controllers/adminController");
+const masterController = require("../controllers/masterController");
 const uploadController = require("../controllers/uploadController");
 
 // Middleware = penjaga sebelum masuk controller
@@ -112,6 +113,24 @@ router.put("/kontak/:id", adminController.updateKontak);
 router.delete("/kontak/:id", adminController.deleteKontak);
 
 // ---------------------------------------------------------------------------
+// Master data — kategori, pengiriman (kurir), bank (rekening)
+// ---------------------------------------------------------------------------
+router.get("/kategori", masterController.listKategori);
+router.post("/kategori", masterController.createKategori);
+router.put("/kategori/:id", masterController.updateKategori);
+router.delete("/kategori/:id", masterController.deleteKategori);
+
+router.get("/pengiriman", masterController.listPengiriman);
+router.post("/pengiriman", masterController.createPengiriman);
+router.put("/pengiriman/:id", masterController.updatePengiriman);
+router.delete("/pengiriman/:id", masterController.deletePengiriman);
+
+router.get("/bank", masterController.listBank);
+router.post("/bank", masterController.createBank);
+router.put("/bank/:id", masterController.updateBank);
+router.delete("/bank/:id", masterController.deleteBank);
+
+// ---------------------------------------------------------------------------
 // Upload gambar — dipanggil SEBELUM simpan path ke produk/profil/info toko
 // Urutan middleware: auth (di atas) → multer (file) → controller (JSON path)
 // ---------------------------------------------------------------------------
@@ -120,9 +139,9 @@ router.delete("/kontak/:id", adminController.deleteKontak);
 router.post("/upload-gambar", middlewareUploadGambar, uploadController.sendHasilUpload);
 
 // ---------------------------------------------------------------------------
-// Info toko — satu baris setting (logo, banner, rekening, sosial media)
+// Info toko — satu baris setting (logo, banner, sosial media; bank di /bank)
 // ---------------------------------------------------------------------------
-// GET /api/admin/info-toko — baca baris info_toko
+// GET /api/admin/info-toko — baca baris info_toko (+ banks)
 router.get("/info-toko", adminController.getInfoToko);
 // PUT /api/admin/info-toko — simpan seluruh form info toko (full update)
 router.put("/info-toko", adminController.updateInfoToko);

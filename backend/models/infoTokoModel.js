@@ -1,6 +1,6 @@
 /**
- * Model — tabel `info_toko` (biasanya satu baris: data toko di beranda / kontak).
- * Kolom mengikuti backend/toko_online.sql: tentang, foto_banner, dll.
+ * Model — tabel `info_toko` (satu baris: data toko di beranda / kontak).
+ * Rekening bank ada di tabel `bank` (bukan kolom di sini).
  */
 
 const db = require("../config/db");
@@ -20,8 +20,7 @@ exports.findInfoToko = () => {
 };
 
 /**
- * Update satu baris info toko (semua kolom bisnis di-set ulang).
- * Tidak mengubah created_at; updated_at diisi MySQL.
+ * Update satu baris info toko (tanpa kolom bank — kelola lewat tabel bank).
  */
 exports.updateInfoToko = (row) => {
   return new Promise((resolve, reject) => {
@@ -34,10 +33,6 @@ exports.updateInfoToko = (row) => {
         alamat_toko = ?,
         email_toko = ?,
         tlp_toko = ?,
-        nama_bank_a = ?,
-        nama_bank_b = ?,
-        no_rek_a = ?,
-        no_rek_b = ?,
         jam_buka = ?,
         jam_tutup = ?,
         logo_wa = ?,
@@ -49,22 +44,17 @@ exports.updateInfoToko = (row) => {
         updated_at = CURRENT_TIMESTAMP
       LIMIT 1
     `;
-    // Urutan values harus sama dengan urutan ? di query UPDATE di atas
     const values = [
-      row.logo_toko,      // path /uploads/images/... dari upload admin
+      row.logo_toko,
       row.nama_toko,
-      row.tentang,        // teks HTML/deskripsi toko
+      row.tentang,
       row.foto_banner,
       row.alamat_toko,
       row.email_toko,
       row.tlp_toko,
-      row.nama_bank_a,    // rekening transfer A
-      row.nama_bank_b,
-      row.no_rek_a,
-      row.no_rek_b,
-      row.jam_buka,       // integer jam (0–23)
+      row.jam_buka,
       row.jam_tutup,
-      row.logo_wa,        // ikon + link sosial media
+      row.logo_wa,
       row.logo_ig,
       row.logo_fb,
       row.link_wa,
@@ -73,7 +63,7 @@ exports.updateInfoToko = (row) => {
     ];
     db.query(query, values, (err, result) => {
       if (err) return reject(err);
-      resolve(result); // affectedRows 0 jika belum ada baris → controller panggil insertInfoToko
+      resolve(result);
     });
   });
 };
@@ -84,9 +74,9 @@ exports.insertInfoToko = (row) => {
     const query = `
       INSERT INTO info_toko (
         logo_toko, nama_toko, tentang, foto_banner, alamat_toko, email_toko, tlp_toko,
-        nama_bank_a, nama_bank_b, no_rek_a, no_rek_b, jam_buka, jam_tutup,
+        jam_buka, jam_tutup,
         logo_wa, logo_ig, logo_fb, link_wa, link_ig, link_fb
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const values = [
       row.logo_toko,
@@ -96,10 +86,6 @@ exports.insertInfoToko = (row) => {
       row.alamat_toko,
       row.email_toko,
       row.tlp_toko,
-      row.nama_bank_a,
-      row.nama_bank_b,
-      row.no_rek_a,
-      row.no_rek_b,
       row.jam_buka,
       row.jam_tutup,
       row.logo_wa,

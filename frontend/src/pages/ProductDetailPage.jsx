@@ -84,7 +84,11 @@ export default function ProductDetailPage() {
               <div className="col-md-7">
                 <p className="section-eyebrow mb-2">{produk.kategori}</p>
                 <h1 className="section-title">{produk.nama_produk}</h1>
-                <p className="detail-price h3 mb-4">{formatRupiah(produk.harga)}</p>
+                <p className="detail-price h3 mb-2">{formatRupiah(produk.harga)}</p>
+                <p className="text-secondary small mb-4">
+                  Stok: {produk.stok ?? 0}
+                  {(produk.stok ?? 0) < 1 ? ' · Habis' : ''}
+                </p>
                 <p className="text-secondary">{produk.deskripsi}</p>
                 {error && (
                   <div className="alert alert-warning py-2 mt-3" role="alert">
@@ -92,8 +96,13 @@ export default function ProductDetailPage() {
                   </div>
                 )}
                 <div className="d-flex flex-wrap gap-2 mt-4">
-                  <button type="button" className="btn btn-dark rounded-0 px-4" onClick={onBeli}>
-                    Beli sekarang
+                  <button
+                    type="button"
+                    className="btn btn-dark rounded-0 px-4"
+                    onClick={onBeli}
+                    disabled={(produk.stok ?? 0) < 1}
+                  >
+                    {(produk.stok ?? 0) < 1 ? 'Stok habis' : 'Beli sekarang'}
                   </button>
                   <Link to="/toko" className="btn btn-outline-dark rounded-0 px-4">
                     Lihat produk lain

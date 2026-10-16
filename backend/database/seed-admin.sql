@@ -1,30 +1,20 @@
 -- =============================================================================
--- Seed manual: user admin (role admin, password bcrypt)
+-- Seed: user admin (password sudah di-hash bcrypt)
 -- =============================================================================
--- Untuk DATABASE BARU (belum ada tabel / belum ada user admin):
---   1) Buat database (sekali) — samakan nama dengan DB_NAME di backend/.env
---   2) Jalankan backend/database/schema-latihan-toko.sql di database itu
---   3) Baru jalankan file ini
+-- Urutan setup database baru:
+--   1) CREATE DATABASE toko_online;  (samakan dengan DB_NAME di backend/.env)
+--   2) Impor schema-latihan-toko.sql
+--   3) Impor file ini (seed-admin.sql)
+--   4) Opsional: seed-lengkapi-toko-online.sql (produk/artikel contoh)
 --
--- Di MySQL CLI, aktifkan baris USE di bawah (ganti nama DB jika beda).
--- Di phpMyAdmin: pilih database dulu di sidebar, lalu impor / tempel skrip ini.
+-- phpMyAdmin: pilih database di sidebar → Impor.
+-- MySQL CLI: USE toko_online; lalu source file ini.
 --
--- CREATE DATABASE IF NOT EXISTS toko_online
---   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE toko_online;
+-- Login di browser (/login) atau Postman:
+--   credential : admin@toko.local   ATAU   admintoko
+--   passwd     : Admin123!
 --
--- Jalankan di MySQL/MariaDB setelah tabel `users` sudah dibuat (langkah 2).
---
--- Login (Postman / API):
---   POST /api/users/login
---   { "credential": "admin@toko.local", "passwd": "Admin123!" }
---   atau credential: "admintoko" (uname)
---
--- Password plaintext (hanya untuk dev): Admin123!
--- Ganti password / hapus user ini setelah setup production.
---
--- Kolom mengikuti INSERT di models/usersModel.js + kolom `role`.
--- Sesuaikan ENUM `role` jika nama di DB Anda berbeda.
+-- Hanya untuk latihan/dev. Ganti password sebelum dipakai publik.
 -- =============================================================================
 
 INSERT INTO users (

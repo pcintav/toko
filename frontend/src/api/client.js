@@ -11,12 +11,22 @@ export const api = {
   // -------------------------------------------------------------------------
   // Katalog & konten publik — tidak wajib login
   // -------------------------------------------------------------------------
-  // GET /api/users/produk — daftar semua produk untuk beranda/toko
-  getProduk: () => apiRequest('/api/users/produk'),
-  // GET /api/users/produk/:id — detail satu produk (halaman ProductDetailPage)
+  // GET /api/users/produk — katalog aktif; params opsional { q, kategori }
+  getProduk: (params = {}) => {
+    const qs = new URLSearchParams();
+    if (params.q) qs.set('q', params.q);
+    if (params.kategori) qs.set('kategori', params.kategori);
+    const q = qs.toString();
+    return apiRequest(`/api/users/produk${q ? `?${q}` : ''}`);
+  },
+  // GET /api/users/produk/:id — detail satu produk aktif (halaman ProductDetailPage)
   getProdukById: (id) => apiRequest(`/api/users/produk/${id}`),
-  // GET /api/users/info-toko — nama, logo, jam buka, rekening (header & footer)
+  // GET /api/users/info-toko — nama, logo, jam buka + banks[] (header & footer)
   getInfoToko: () => apiRequest('/api/users/info-toko'),
+  // Master data publik untuk dropdown / filter
+  getKategori: () => apiRequest('/api/users/kategori'),
+  getPengiriman: () => apiRequest('/api/users/pengiriman'),
+  getBank: () => apiRequest('/api/users/bank'),
   // GET /api/users/artikel — daftar artikel blog
   getArtikel: () => apiRequest('/api/users/artikel'),
   // GET /api/users/artikel/:id — isi lengkap satu artikel

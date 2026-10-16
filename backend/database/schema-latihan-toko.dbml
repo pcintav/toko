@@ -1,29 +1,19 @@
 // =============================================================================
 // Latihan toko — diagram untuk dbdiagram.io (DBML)
-// Sinkron dengan: schema-latihan-toko.sql + kolom pembelian.foto_bukti
-// =============================================================================
-// Cara pakai: buka https://dbdiagram.io → New project → paste isi file ini,
-//   atau Import → pilih file .dbml
+// Sinkron dengan: schema-latihan-toko.sql
 // =============================================================================
 
 Project latihan_toko {
   database_type: 'MySQL'
   Note: '''
-    Skema latihan SMK (users, produk, pembelian, artikel, kontak, info_toko).
-    Ekspor ke SQL dari dbdiagram bisa sedikit beda dari schema-latihan-toko.sql;
-    untuk migrasi nyata tetap pakai file .sql di folder database/.
+    Master: kategori_produk, pengiriman, bank (bukan ENUM).
+    produk.kategori & pembelian.pengiriman = VARCHAR (nama dari master).
   '''
 }
 
 enum users_role {
   admin
   pembeli
-}
-
-enum produk_kategori {
-  "Mango Sticky Rice"
-  "Mango Pudding"
-  "Mango Milkshake"
 }
 
 enum pembelian_metode_pembayaran {
@@ -34,11 +24,6 @@ enum pembelian_metode_pembayaran {
 enum pembelian_pembayaran {
   Belum
   Dibayar
-}
-
-enum pembelian_pengiriman {
-  "JNT Express"
-  JNE
 }
 
 enum pembelian_status {
@@ -57,13 +42,36 @@ Table users {
   lahir text [not null]
   alamat text [not null]
   phone bigint [not null]
-  email varchar(30) [not null, unique, note: 'uq_users_email']
+  email varchar(30) [not null, unique]
   role users_role [not null, default: 'pembeli']
-  uname varchar(30) [not null, unique, note: 'uq_users_uname']
+  uname varchar(30) [not null, unique]
   passwd varchar(256) [not null]
   foto varchar(500) [not null]
   created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
-  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'MySQL: ON UPDATE CURRENT_TIMESTAMP']
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table kategori_produk {
+  id int [pk, increment]
+  nama varchar(100) [not null, unique]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table pengiriman {
+  id int [pk, increment]
+  nama varchar(100) [not null, unique]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table bank {
+  id int [pk, increment]
+  nama_bank varchar(50) [not null]
+  no_rek varchar(50) [not null]
+  atas_nama varchar(100) [null, note: 'a.n. pemilik rekening']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
 }
 
 Table produk {
@@ -72,60 +80,58 @@ Table produk {
   deskripsi text [not null]
   harga int [not null]
   gambar varchar(500) [null]
-  kategori produk_kategori [not null, default: 'Mango Sticky Rice']
+  kategori varchar(100) [not null, note: 'nama dari kategori_produk']
+  stok int [not null, default: 0]
+  aktif tinyint [not null, default: 1, note: '1=tampil di katalog, 0=nonaktif']
   created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
-  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'MySQL: ON UPDATE CURRENT_TIMESTAMP']
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
 }
 
 Table pembelian {
   id int [pk, increment, not null]
-  id_pembeli int [not null]
-  id_produk int [not null]
+  id_pembeli int [not null, ref: > users.id]
+  id_produk int [not null, ref: > produk.id_produk]
   nama_pembeli varchar(50) [null]
   alamat_pembeli text [null]
   phone_pembeli bigint [null]
   metode_pembayaran pembelian_metode_pembayaran [not null, default: 'COD']
   pembayaran pembelian_pembayaran [not null, default: 'Belum']
-  pengiriman pembelian_pengiriman [not null, default: 'JNT Express']
+  pengiriman varchar(100) [not null, note: 'nama dari tabel pengiriman']
   status pembelian_status [not null, default: 'Tertunda']
   catatan text [null]
-  foto_bukti varchar(500) [null, note: 'migration-pembelian-foto-bukti.sql']
+  foto_bukti varchar(500) [null]
   created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
-  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'MySQL: ON UPDATE CURRENT_TIMESTAMP']
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
 }
 
 Table artikel {
-  id int [pk, increment, not null]
+  id int [pk, increment]
   judul varchar(225) [not null]
   ringkasan text [not null]
   isi text [not null]
   gambar varchar(500) [not null]
   created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
-  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'MySQL: ON UPDATE CURRENT_TIMESTAMP']
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
 }
 
 Table kontak {
-  id int [pk, increment, not null]
+  id int [pk, increment]
   nama_lengkap varchar(50) [not null]
   email varchar(30) [not null]
   no_hp bigint [not null]
   isi_pesan text [not null]
   created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
-  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'MySQL: ON UPDATE CURRENT_TIMESTAMP']
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
 }
 
-Table info_toko [note: 'Skema SQL latihan tanpa kolom id/PK — biasanya satu baris konfigurasi toko.'] {
+Table info_toko {
   logo_toko varchar(500) [not null]
   nama_toko varchar(50) [not null]
-  tentang text [not null, note: 'Teks promosi banner beranda']
-  foto_banner varchar(500) [not null, note: 'Gambar latar banner beranda (boleh kosong)']
+  tentang text [not null]
+  foto_banner varchar(500) [not null]
   alamat_toko text [not null]
   email_toko varchar(30) [not null]
   tlp_toko bigint [not null]
-  nama_bank_a varchar(30) [not null]
-  nama_bank_b varchar(30) [not null]
-  no_rek_a bigint [not null]
-  no_rek_b bigint [not null]
   jam_buka int [not null]
   jam_tutup int [not null]
   logo_wa varchar(500) [not null]
@@ -135,23 +141,6 @@ Table info_toko [note: 'Skema SQL latihan tanpa kolom id/PK — biasanya satu ba
   link_ig text [not null]
   link_fb text [not null]
   created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
-  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'MySQL: ON UPDATE CURRENT_TIMESTAMP']
-}
-
-Ref fk_pembelian_user: pembelian.id_pembeli > users.id [delete: restrict, update: cascade]
-Ref fk_pembelian_produk: pembelian.id_produk > produk.id_produk [delete: restrict, update: cascade]
-
-TableGroup auth_dan_produk {
-  users
-  produk
-}
-
-TableGroup transaksi_dan_konten {
-  pembelian
-  artikel
-  kontak
-}
-
-TableGroup toko {
-  info_toko
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  Note: 'Rekening bank ada di tabel bank, bukan di sini'
 }

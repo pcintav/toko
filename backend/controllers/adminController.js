@@ -12,6 +12,9 @@ const pembelianModel = require("../models/pembelianModel");
 const artikelModel = require("../models/artikelModel");
 const kontakModel = require("../models/kontakModel");
 const infoTokoModel = require("../models/infoTokoModel");
+const kategoriModel = require("../models/kategoriModel");
+const pengirimanModel = require("../models/pengirimanModel");
+const bankModel = require("../models/bankModel");
 const { normalizeKelamin } = require("../utils/kelamin");
 const bcrypt = require("bcrypt");
 const {
@@ -25,11 +28,8 @@ const {
   deletePembeliById
 } = require("../models/usersModel");
 
-// --- Nilai ENUM di MySQL harus PERSIS sama string di bawah (sesuai contoh-database.sql) ---
-
-const KATEGORI_PRODUK = ["Mango Sticky Rice", "Mango Pudding", "Mango Milkshake"];
+// ENUM yang tetap di kolom pembelian (bukan tabel master)
 const METODE_BAYAR = ["Bank Transfer", "COD"];
-const SHIPPING = ["JNT Express", "JNE"];
 const STATUS_PROSES = ["Tertunda", "Dikemas", "Dikirim", "Diterima", "Selesai"];
 const STATUS_BAYAR = ["Belum", "Dibayar"];
 
@@ -77,10 +77,12 @@ exports.listPembeli = async (req, res) => {
 // Produk — CRUD katalog (validasi kategori ENUM sebelum INSERT/UPDATE)
 // =============================================================================
 
-/** GET /api/admin/produk */
+/** GET /api/admin/produk — semua produk (termasuk nonaktif); ?q=&kategori= */
 exports.listProduk = async (req, res) => {
   try {
-    const data = await produkModel.findAllProduk();
+    const q = req.query.q != null ? String(req.query.q) : "";
+    const kategori = req.query.kategori != null ? String(req.query.kategori) : "";
+    const data = await produkModel.findAllProduk({ q, kategori, hanyaAktif: false });
     res.status(200).json({ message: "Daftar produk", data });
   } catch (error) {
     console.error(error);
@@ -104,6 +106,21 @@ exports.getProdukById = async (req, res) => {
   }
 };
 
+/** Parse stok & aktif dari body form admin. */
+function parseStokAktif(body) {
+  const stokNum = parseInt(String(body.stok ?? 0), 10);
+  if (Number.isNaN(stokNum) || stokNum < 0) {
+    return { error: "stok harus angka >= 0" };
+  }
+  // aktif: true/false, 1/0, "1"/"0", atau checkbox
+  const raw = body.aktif;
+  const aktif =
+    raw === undefined || raw === null
+      ? true
+      : raw === true || raw === 1 || raw === "1" || raw === "true" || raw === "on";
+  return { stok: stokNum, aktif };
+}
+
 /** POST /api/admin/produk — body dari form AdminProdukPage setelah upload gambar */
 exports.createProduk = async (req, res) => {
   try {
@@ -120,9 +137,14 @@ exports.createProduk = async (req, res) => {
       return res.status(400).json({ message: "harga harus angka >= 0" });
     }
 
-    // Harus cocok ENUM kolom kategori di MySQL — typo = error 400 + daftar allowed
-    if (!KATEGORI_PRODUK.includes(kategori)) {
-      return res.status(400).json({ message: "kategori tidak valid", allowed: KATEGORI_PRODUK });
+    const sa = parseStokAktif(req.body);
+    if (sa.error) return res.status(400).json({ message: sa.error });
+
+    // Harus ada di tabel master kategori_produk
+    const katNama = String(kategori).trim();
+    if (!(await kategoriModel.existsByNama(katNama))) {
+      const allowed = (await kategoriModel.findAll()).map((r) => r.nama);
+      return res.status(400).json({ message: "kategori tidak valid", allowed });
     }
 
     // gambar = path "/uploads/images/..." dari POST upload-gambar; kosong → NULL di DB
@@ -131,7 +153,9 @@ exports.createProduk = async (req, res) => {
       deskripsi: String(deskripsi).trim(),
       harga: hargaNum,
       gambar: gambar != null && String(gambar).trim() !== "" ? String(gambar).trim() : null,
-      kategori
+      kategori: katNama,
+      stok: sa.stok,
+      aktif: sa.aktif
     });
 
     res.status(201).json({
@@ -163,8 +187,13 @@ exports.updateProduk = async (req, res) => {
       return res.status(400).json({ message: "harga harus angka >= 0" });
     }
 
-    if (!KATEGORI_PRODUK.includes(kategori)) {
-      return res.status(400).json({ message: "kategori tidak valid", allowed: KATEGORI_PRODUK });
+    const sa = parseStokAktif(req.body);
+    if (sa.error) return res.status(400).json({ message: sa.error });
+
+    const katNama = String(kategori).trim();
+    if (!(await kategoriModel.existsByNama(katNama))) {
+      const allowed = (await kategoriModel.findAll()).map((r) => r.nama);
+      return res.status(400).json({ message: "kategori tidak valid", allowed });
     }
 
     await produkModel.updateProduk(id, {
@@ -172,7 +201,9 @@ exports.updateProduk = async (req, res) => {
       deskripsi: String(deskripsi).trim(),
       harga: hargaNum,
       gambar: gambar != null && String(gambar).trim() !== "" ? String(gambar).trim() : null,
-      kategori
+      kategori: katNama,
+      stok: sa.stok,
+      aktif: sa.aktif
     });
 
     res.status(200).json({ message: "Produk berhasil diubah" });
@@ -232,8 +263,36 @@ exports.getPembelianById = async (req, res) => {
 };
 
 /**
+ * Konsekuensi status pesanan (wajib diterapkan di server):
+ * - Diterima / Selesai → pembayaran = Dibayar (COD lunas / transaksi selesai)
+ * - Dikemas / Dikirim + Bank Transfer → pembayaran = Dibayar
+ * - Tertunda → tidak memaksa pembayaran
+ */
+function applyStatusConsequences({ status, pembayaran, metode_pembayaran }) {
+  let nextBayar = pembayaran;
+  const efek = [];
+
+  if (status === "Diterima" || status === "Selesai") {
+    if (nextBayar !== "Dibayar") {
+      nextBayar = "Dibayar";
+      efek.push(`Status ${status}: pembayaran otomatis Dibayar`);
+    }
+  } else if (
+    (status === "Dikemas" || status === "Dikirim") &&
+    metode_pembayaran === "Bank Transfer" &&
+    nextBayar !== "Dibayar"
+  ) {
+    nextBayar = "Dibayar";
+    efek.push(`Status ${status} + Bank Transfer: pembayaran otomatis Dibayar`);
+  }
+
+  return { pembayaran: nextBayar, efek };
+}
+
+/**
  * PUT /api/admin/pembelian/:id
  * Body: metode_pembayaran, pembayaran, pengiriman, status, catatan (opsional)
+ * Status memicu konsekuensi pembayaran (lihat applyStatusConsequences).
  */
 exports.updatePembelian = async (req, res) => {
   try {
@@ -243,7 +302,7 @@ exports.updatePembelian = async (req, res) => {
     const existing = await pembelianModel.findPembelianById(id);
     if (!existing) return res.status(404).json({ message: "Pembelian tidak ditemukan" });
 
-    const { metode_pembayaran, pembayaran, pengiriman, status, catatan } = req.body;
+    let { metode_pembayaran, pembayaran, pengiriman, status, catatan } = req.body;
 
     // Admin hanya boleh ubah kolom operasional — id_pembeli/id_produk tidak ada di body
     if (!METODE_BAYAR.includes(metode_pembayaran)) {
@@ -252,22 +311,39 @@ exports.updatePembelian = async (req, res) => {
     if (!STATUS_BAYAR.includes(pembayaran)) {
       return res.status(400).json({ message: "pembayaran tidak valid", allowed: STATUS_BAYAR });
     }
-    if (!SHIPPING.includes(pengiriman)) {
-      return res.status(400).json({ message: "pengiriman tidak valid", allowed: SHIPPING });
+    const shipNama = String(pengiriman || "").trim();
+    if (!(await pengirimanModel.existsByNama(shipNama))) {
+      const allowed = (await pengirimanModel.findAll()).map((r) => r.nama);
+      return res.status(400).json({ message: "pengiriman tidak valid", allowed });
     }
     if (!STATUS_PROSES.includes(status)) {
       return res.status(400).json({ message: "status tidak valid", allowed: STATUS_PROSES });
     }
 
+    const applied = applyStatusConsequences({
+      status,
+      pembayaran,
+      metode_pembayaran
+    });
+    pembayaran = applied.pembayaran;
+
     await pembelianModel.updatePembelianAdminFields(id, {
       metode_pembayaran,
       pembayaran,
-      pengiriman,
+      pengiriman: shipNama,
       status,
       catatan
     });
 
-    res.status(200).json({ message: "Pembelian berhasil diperbarui" });
+    const row = await pembelianModel.findPembelianById(id);
+    res.status(200).json({
+      message:
+        applied.efek.length > 0
+          ? `Pembelian diperbarui. ${applied.efek.join("; ")}`
+          : "Pembelian berhasil diperbarui",
+      data: row,
+      konsekuensi: applied.efek
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -710,13 +786,14 @@ exports.deleteUser = async (req, res) => {
 // Info toko — satu baris setting (logo, rekening, sosial media)
 // =============================================================================
 
-/** GET /api/admin/info-toko */
+/** GET /api/admin/info-toko — sertakan daftar bank dari tabel bank */
 exports.getInfoToko = async (req, res) => {
   try {
     const row = await infoTokoModel.findInfoToko();
     if (!row) return res.status(404).json({ message: "Data toko belum ada di database" });
 
-    res.status(200).json({ message: "Info toko", data: row });
+    const banks = await bankModel.findAll();
+    res.status(200).json({ message: "Info toko", data: { ...row, banks } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -724,22 +801,17 @@ exports.getInfoToko = async (req, res) => {
 };
 
 /**
- * PUT /api/admin/info-toko — kirim semua field bisnis (full update satu baris).
+ * PUT /api/admin/info-toko — full update info toko (rekening bank dikelola di /api/admin/bank).
  */
 exports.updateInfoToko = async (req, res) => {
   try {
     const b = req.body;
 
-    // Daftar field teks/wajib dari form AdminInfoTokoPage (full update, bukan PATCH sebagian)
     const required = [
       "nama_toko",
       "alamat_toko",
       "email_toko",
       "tlp_toko",
-      "nama_bank_a",
-      "nama_bank_b",
-      "no_rek_a",
-      "no_rek_b",
       "jam_buka",
       "jam_tutup",
       "link_wa",
@@ -753,7 +825,6 @@ exports.updateInfoToko = async (req, res) => {
       }
     }
 
-    // tentang & foto_banner boleh string panjang / path — dicek terpisah
     if (b.tentang === undefined || b.tentang === null) {
       return res.status(400).json({ message: "Field wajib: tentang" });
     }
@@ -767,7 +838,6 @@ exports.updateInfoToko = async (req, res) => {
       return res.status(400).json({ message: "jam_buka dan jam_tutup harus angka" });
     }
 
-    // Objek lengkap untuk UPDATE satu baris info_toko (logo opsional bisa string kosong)
     const payload = {
       logo_toko: b.logo_toko != null ? String(b.logo_toko).trim() : "",
       nama_toko: String(b.nama_toko).trim(),
@@ -776,10 +846,6 @@ exports.updateInfoToko = async (req, res) => {
       alamat_toko: String(b.alamat_toko).trim(),
       email_toko: String(b.email_toko).trim(),
       tlp_toko: b.tlp_toko,
-      nama_bank_a: String(b.nama_bank_a).trim(),
-      nama_bank_b: String(b.nama_bank_b).trim(),
-      no_rek_a: b.no_rek_a,
-      no_rek_b: b.no_rek_b,
       jam_buka: jamBuka,
       jam_tutup: jamTutup,
       logo_wa: b.logo_wa != null ? String(b.logo_wa).trim() : "",

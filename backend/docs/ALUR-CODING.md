@@ -87,13 +87,19 @@ Itu diatur di `frontend/src/api/http.js` (`authHeaders()`).
 | Menu / halaman (React) | File halaman | Fungsi utama API (`/api/admin/...`) |
 |------------------------|--------------|-------------------------------------|
 | Dashboard | `AdminOverviewPage.jsx` | `GET /stats` |
-| Produk | `AdminProdukPage.jsx` | CRUD `/produk`, upload gambar |
+| Produk | `AdminProdukPage.jsx` | CRUD `/produk` (stok, aktif), upload gambar |
+| Kategori / Kurir / Bank | `AdminKategoriPage` dll. | CRUD master |
 | Pembeli | `AdminPembeliPage.jsx` | `GET /pembeli`, CRUD `/users/:id` |
-| Pesanan | `AdminPembelianPage.jsx` | `GET/PUT/DELETE /pembelian` |
+| Pesanan | `AdminPembelianPage.jsx` | `GET/PUT/DELETE /pembelian` (+ lihat foto_bukti) |
+| Laporan | `AdminLaporanPage.jsx` | filter + CSV |
 | Artikel | `AdminArtikelPage.jsx` | CRUD `/artikel` |
 | Kontak | `AdminKontakPage.jsx` | `GET/PUT/DELETE /kontak` |
-| Info toko | `AdminInfoTokoPage.jsx` | `GET/PUT /info-toko` |
+| Info toko | `AdminInfoTokoPage.jsx` | `GET/PUT /info-toko` (+ banks di tabel bank) |
 | Profil | `AdminProfilPage.jsx` | `GET/PUT /me` |
+
+**Katalog publik:** `GET /api/users/produk?q=&kategori=` — hanya produk `aktif=1`.  
+**Checkout:** stok dikurangi 1; Bank Transfer wajib `foto_bukti`.  
+**Bukti belakangan:** `PUT /api/users/pembelian/:id/bukti`.
 
 Routing React ada di `frontend/src/App.jsx`. Pemanggilan API terpusat di `frontend/src/api/adminApi.js`.
 

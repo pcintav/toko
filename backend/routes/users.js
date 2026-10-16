@@ -15,6 +15,7 @@ const router = express.Router();
 const { registerUser, loginUser, getMyProfile, updateMyProfile } = require("../controllers/usersController");
 const { pesanContact } = require("../controllers/pesanController");
 const pembeliController = require("../controllers/pembeliController");
+const masterController = require("../controllers/masterController");
 const uploadController = require("../controllers/uploadController");
 const { authenticate } = require("../middlewares/authMiddleware");
 const { requireRole } = require("../middlewares/roleMiddleware");
@@ -35,13 +36,18 @@ router.post("/login", loginUser);
 router.post("/contact", pesanContact);
 
 // --- Katalog & konten toko (halaman beranda, /toko, /artikel) ---
-// GET /api/users/produk — daftar semua produk untuk ProductCard / halaman toko
+// GET /api/users/produk — katalog aktif; query opsional ?q=&kategori=
 router.get("/produk", pembeliController.listProduk);
-// GET /api/users/produk/7 — detail satu produk (halaman /produk/:id)
+// GET /api/users/produk/7 — detail satu produk aktif (halaman /produk/:id)
 router.get("/produk/:id_produk", pembeliController.getProdukById);
 
-// GET /api/users/info-toko — logo, alamat, jam buka, rekening (Header, Hero, Footer)
+// GET /api/users/info-toko — logo, alamat, jam buka + banks[] (Header, Hero, Footer, checkout)
 router.get("/info-toko", pembeliController.getInfoTokoPublik);
+
+// Master data publik — isi dropdown kategori / kurir / rekening
+router.get("/kategori", masterController.listKategori);
+router.get("/pengiriman", masterController.listPengiriman);
+router.get("/bank", masterController.listBank);
 
 // GET /api/users/artikel — list artikel (ringkasan; isi penuh di detail)
 router.get("/artikel", pembeliController.listArtikelPublik);
@@ -82,5 +88,13 @@ router.get("/pembelian", authenticate, requireRole("pembeli"), pembeliController
 // GET /api/users/pembelian/9 — detail satu pesanan milik saya saja
 // Route /pembelian/:id harus di bawah GET /pembelian agar Express tidak menganggap "pembelian" sebagai :id
 router.get("/pembelian/:id", authenticate, requireRole("pembeli"), pembeliController.getMyPembelianById);
+
+// PUT /api/users/pembelian/:id/bukti — unggah/ganti bukti transfer
+router.put(
+  "/pembelian/:id/bukti",
+  authenticate,
+  requireRole("pembeli"),
+  pembeliController.updateBuktiPembelian
+);
 
 module.exports = router;

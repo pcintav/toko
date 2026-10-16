@@ -1,11 +1,10 @@
 /**
- * [buatan] Bar info kepercayaan (alamat, telepon, email, jam, bank).
- *
- * Data dari info toko; ditampilkan di bawah hero beranda.
+ * [buatan] Bar info kepercayaan (alamat, telepon, email, jam).
+ * Rekening: hanya sinyal "transfer tersedia" — nomor lengkap di checkout.
  */
 import { jamOperasional } from '../../utils/format';
 
-/** Props: info toko — bar alamat, telepon, email, jam buka di bawah hero. */
+/** Props: info toko, loading — bar alamat, telepon, email, jam buka di bawah hero. */
 export default function TrustBar({ info, loading }) {
   if (loading || !info) {
     return (
@@ -16,7 +15,9 @@ export default function TrustBar({ info, loading }) {
   }
 
   const jam = jamOperasional(info.jam_buka, info.jam_tutup);
-  const bank = [info.nama_bank_a, info.nama_bank_b].filter(Boolean).join(' · ');
+  const punyaBank =
+    Array.isArray(info.banks) &&
+    info.banks.some((b) => b.nama_bank && b.no_rek != null && String(b.no_rek).trim() !== '');
 
   const items = [
     { title: 'Alamat', text: info.alamat_toko },
@@ -38,11 +39,9 @@ export default function TrustBar({ info, loading }) {
             </div>
           ))}
         </div>
-        {bank && (
+        {punyaBank && (
           <p className="text-center small text-secondary mb-0 py-2 border-top">
-            Pembayaran transfer: {bank}
-            {info.no_rek_a ? ` · Rek. ${info.no_rek_a}` : ''}
-            {info.no_rek_b ? ` · ${info.no_rek_b}` : ''}
+            Pembayaran transfer bank tersedia — detail rekening ditampilkan saat checkout
           </p>
         )}
       </div>

@@ -13,8 +13,12 @@ import { mediaUrl } from '../../utils/media';
 const MENU = [
   { to: '/admin', end: true, label: 'Dashboard', icon: '◫' },
   { to: '/admin/produk', label: 'Produk', icon: '▣' },
+  { to: '/admin/kategori', label: 'Kategori', icon: '◈' },
+  { to: '/admin/pengiriman', label: 'Pengiriman', icon: '⇢' },
+  { to: '/admin/bank', label: 'Bank', icon: '₴' },
   { to: '/admin/pembeli', label: 'Pembeli', icon: '◎' },
   { to: '/admin/pembelian', label: 'Pesanan', icon: '▤' },
+  { to: '/admin/laporan', label: 'Laporan', icon: '▦' },
   { to: '/admin/artikel', label: 'Artikel', icon: '▥' },
   { to: '/admin/kontak', label: 'Pesan Kontak', icon: '✉' },
   { to: '/admin/info-toko', label: 'Info Toko', icon: '⌂' },

@@ -1,7 +1,7 @@
 /**
- * [buatan] Katalog produk dengan filter kategori.
+ * [buatan] Katalog produk dengan filter kategori + pencarian.
  *
- * URL: `/toko` dan `/toko?kategori=...` — api.getProduk, ProductCard.
+ * URL: `/toko` — query `?kategori=` & `?q=` — api.getProduk, ProductCard.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -9,31 +9,46 @@ import { api } from '../api/client';
 import Header from '../components/layout/Header';
 import SiteBottomBar from '../components/layout/SiteBottomBar';
 import ProductCard from '../components/home/ProductCard';
-import { LABEL_SEMUA, kategoriDariProduk } from '../utils/kategori';
+import { LABEL_SEMUA, daftarFilterKategori } from '../utils/kategori';
 
 export default function TokoPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [produk, setProduk] = useState([]);
   const [info, setInfo] = useState(null);
+  const [kategoriMaster, setKategoriMaster] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const kategoriParam = searchParams.get('kategori') || LABEL_SEMUA; // dari URL ?kategori=
-  const [kategoriAktif, setKategoriAktif] = useState(kategoriParam); // tab filter aktif
+  const kategoriParam = searchParams.get('kategori') || LABEL_SEMUA;
+  const qParam = searchParams.get('q') || '';
+  const [kategoriAktif, setKategoriAktif] = useState(kategoriParam);
+  const [qInput, setQInput] = useState(qParam);
 
   useEffect(() => {
     setKategoriAktif(kategoriParam);
-  }, [kategoriParam]);
+    setQInput(qParam);
+  }, [kategoriParam, qParam]);
 
-  // Muat katalog produk + info toko
+  // Muat katalog dari API (filter q + kategori di server)
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoading(true);
       try {
-        const [pRes, iRes] = await Promise.all([api.getProduk(), api.getInfoToko()]);
+        const params = {};
+        if (qParam.trim()) params.q = qParam.trim();
+        if (kategoriParam && kategoriParam !== LABEL_SEMUA) params.kategori = kategoriParam;
+
+        const [pRes, iRes, kRes] = await Promise.all([
+          api.getProduk(params),
+          api.getInfoToko(),
+          api.getKategori(),
+        ]);
         if (cancelled) return;
         setProduk(pRes.data || []);
         setInfo(iRes.data || null);
+        setKategoriMaster(Array.isArray(kRes.data) ? kRes.data : []);
+        setError('');
       } catch {
         if (!cancelled) {
           setError('Katalog tidak dapat dimuat. Periksa koneksi lalu muat ulang halaman.');
@@ -45,23 +60,28 @@ export default function TokoPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [qParam, kategoriParam]);
 
-  const kategoriList = useMemo(() => kategoriDariProduk(produk), [produk]);
+  const kategoriList = useMemo(
+    () => daftarFilterKategori(kategoriMaster, produk),
+    [kategoriMaster, produk]
+  );
 
-  const produkFilter = useMemo(() => {
-    if (kategoriAktif === LABEL_SEMUA) return produk;
-    return produk.filter((p) => p.kategori === kategoriAktif);
-  }, [produk, kategoriAktif]);
+  const syncParams = (nextKat, nextQ) => {
+    const p = {};
+    if (nextKat && nextKat !== LABEL_SEMUA) p.kategori = nextKat;
+    if (nextQ && nextQ.trim()) p.q = nextQ.trim();
+    setSearchParams(p);
+  };
 
-  // Ganti filter + sinkronkan query string agar bisa dibookmark
   const pilihKategori = (k) => {
     setKategoriAktif(k);
-    if (k === LABEL_SEMUA) {
-      setSearchParams({});
-    } else {
-      setSearchParams({ kategori: k });
-    }
+    syncParams(k, qParam);
+  };
+
+  const onCari = (e) => {
+    e.preventDefault();
+    syncParams(kategoriAktif, qInput);
   };
 
   return (
@@ -86,6 +106,36 @@ export default function TokoPage() {
             </div>
           )}
 
+          <form className="row g-2 mb-4" onSubmit={onCari}>
+            <div className="col-md-8">
+              <input
+                type="search"
+                className="form-control rounded-0"
+                placeholder="Cari nama atau deskripsi produk…"
+                value={qInput}
+                onChange={(e) => setQInput(e.target.value)}
+                aria-label="Cari produk"
+              />
+            </div>
+            <div className="col-md-4 d-flex gap-2">
+              <button type="submit" className="btn btn-dark rounded-0 flex-grow-1">
+                Cari
+              </button>
+              {qParam && (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary rounded-0"
+                  onClick={() => {
+                    setQInput('');
+                    syncParams(kategoriAktif, '');
+                  }}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          </form>
+
           <ul className="nav category-tabs mb-4 flex-wrap gap-2">
             <TabButton active={kategoriAktif === LABEL_SEMUA} onClick={() => pilihKategori(LABEL_SEMUA)} label={LABEL_SEMUA} />
             {kategoriList.map((k) => (
@@ -95,20 +145,23 @@ export default function TokoPage() {
 
           {loading ? (
             <LoadingGrid count={8} />
-          ) : produkFilter.length === 0 ? (
+          ) : produk.length === 0 ? (
             <p className="text-secondary text-center py-5">
-              {kategoriAktif !== LABEL_SEMUA
-                ? `Belum ada produk dalam kategori ${kategoriAktif}.`
-                : 'Belum ada produk.'}
+              {qParam
+                ? `Tidak ada produk untuk pencarian “${qParam}”.`
+                : kategoriAktif !== LABEL_SEMUA
+                  ? `Belum ada produk dalam kategori ${kategoriAktif}.`
+                  : 'Belum ada produk.'}
             </p>
           ) : (
             <>
               <p className="text-secondary small mb-3">
-                Menampilkan {produkFilter.length} produk
+                Menampilkan {produk.length} produk
                 {kategoriAktif !== LABEL_SEMUA ? ` · ${kategoriAktif}` : ''}
+                {qParam ? ` · “${qParam}”` : ''}
               </p>
               <div className="row g-4 row-cols-2 row-cols-md-3 row-cols-lg-4">
-                {produkFilter.map((p) => (
+                {produk.map((p) => (
                   <div key={p.id_produk} className="col">
                     <ProductCard produk={p} />
                   </div>

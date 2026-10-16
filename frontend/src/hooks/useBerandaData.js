@@ -1,35 +1,37 @@
 /**
  * hooks/useBerandaData.js — hook data halaman beranda (HomePage).
  *
- * Memuat produk, artikel, dan info toko paralel via api/client; menghitung
- * kategori, produk terbaru, dan artikel tampilan.
+ * Memuat produk, artikel, info toko (+ banks), dan master kategori paralel.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
-import { kategoriDariProduk } from '../utils/kategori';
+import { daftarFilterKategori } from '../utils/kategori';
 
 export function useBerandaData() {
   const [produk, setProduk] = useState([]);
   const [artikel, setArtikel] = useState([]);
   const [info, setInfo] = useState(null);
+  const [kategoriMaster, setKategoriMaster] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Fetch awal paralel: produk + artikel + info toko (satu putaran network)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [pRes, aRes, iRes] = await Promise.all([
+        // info-toko sudah menyertakan banks[] dari tabel bank
+        const [pRes, aRes, iRes, kRes] = await Promise.all([
           api.getProduk(),
           api.getArtikel(),
           api.getInfoToko(),
+          api.getKategori(),
         ]);
         if (cancelled) return;
         setProduk(pRes.data || []);
         setArtikel(aRes.data || []);
         setInfo(iRes.data || null);
-      } catch (e) {
+        setKategoriMaster(Array.isArray(kRes.data) ? kRes.data : []);
+      } catch {
         if (!cancelled) {
           setError('Data toko tidak dapat dimuat. Periksa koneksi lalu muat ulang halaman.');
         }
@@ -37,23 +39,23 @@ export function useBerandaData() {
         if (!cancelled) setLoading(false);
       }
     })();
-    // Cleanup: batalkan setState jika komponen unmount sebelum selesai
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Daftar nama kategori unik dari produk — untuk filter & PromoKategori
-  const kategoriList = useMemo(() => kategoriDariProduk(produk), [produk]);
+  // Tab/filter & tagline: dari tabel kategori_produk
+  const kategoriList = useMemo(
+    () => daftarFilterKategori(kategoriMaster, produk),
+    [kategoriMaster, produk]
+  );
 
-  // Empat produk terbaru berdasarkan created_at — section "Produk Terbaru"
   const produkTerbaru = useMemo(() => {
     return [...produk]
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 4);
   }, [produk]);
 
-  // Tiga artikel pertama — teaser di beranda
   const artikelTampil = useMemo(() => artikel.slice(0, 3), [artikel]);
 
   return {
@@ -64,6 +66,7 @@ export function useBerandaData() {
     loading,
     error,
     kategoriList,
+    kategoriMaster,
     produkTerbaru,
   };
 }

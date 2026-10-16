@@ -4,7 +4,7 @@
  * Alur: App.jsx → BrowserRouter → AppRoutes (file ini) → halaman sesuai path.
  * React Router v6: Route bersarang = layout (AdminLayout) + halaman anak (Outlet).
  */
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import RequireAuth from '../components/auth/RequireAuth';
 import AdminLayout from '../layouts/AdminLayout';
 import PembeliLayout from '../layouts/PembeliLayout';
@@ -21,12 +21,17 @@ import PembeliPesananPage from '../pages/pembeli/PembeliPesananPage';
 import PembeliProfilPage from '../pages/pembeli/PembeliProfilPage';
 import AdminOverviewPage from '../pages/admin/AdminOverviewPage';
 import AdminProdukPage from '../pages/admin/AdminProdukPage';
+import AdminKategoriPage from '../pages/admin/AdminKategoriPage';
+import AdminPengirimanPage from '../pages/admin/AdminPengirimanPage';
+import AdminBankPage from '../pages/admin/AdminBankPage';
 import AdminPembeliPage from '../pages/admin/AdminPembeliPage';
 import AdminPembelianPage from '../pages/admin/AdminPembelianPage';
+import AdminLaporanPage from '../pages/admin/AdminLaporanPage';
 import AdminArtikelPage from '../pages/admin/AdminArtikelPage';
 import AdminKontakPage from '../pages/admin/AdminKontakPage';
 import AdminInfoTokoPage from '../pages/admin/AdminInfoTokoPage';
 import AdminProfilPage from '../pages/admin/AdminProfilPage';
+import NotFoundPage from '../pages/NotFoundPage';
 
 export default function AppRoutes() {
   return (
@@ -57,8 +62,12 @@ export default function AppRoutes() {
       >
         <Route index element={<AdminOverviewPage />} />
         <Route path="produk" element={<AdminProdukPage />} />
+        <Route path="kategori" element={<AdminKategoriPage />} />
+        <Route path="pengiriman" element={<AdminPengirimanPage />} />
+        <Route path="bank" element={<AdminBankPage />} />
         <Route path="pembeli" element={<AdminPembeliPage />} />
         <Route path="pembelian" element={<AdminPembelianPage />} />
+        <Route path="laporan" element={<AdminLaporanPage />} />
         <Route path="artikel" element={<AdminArtikelPage />} />
         <Route path="kontak" element={<AdminKontakPage />} />
         <Route path="info-toko" element={<AdminInfoTokoPage />} />
@@ -83,8 +92,8 @@ export default function AppRoutes() {
         <Route path="profil" element={<PembeliProfilPage />} />
       </Route>
 
-      {/* Path tidak cocok → beranda (replace agar tidak bisa "back" ke URL palsu) */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Path tidak cocok → halaman 404 */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

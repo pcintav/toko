@@ -3,13 +3,15 @@
  *
  * Dipakai halaman kelola produk, pembeli, pesanan, artikel, kontak.
  */
-/** Props: onDetail, onEdit, onDelete — callback per baris tabel admin. */
+/** Props: onDetail (opsional), onEdit, onDelete — callback per baris tabel admin. */
 export default function AdminRowActions({ onDetail, onEdit, onDelete }) {
   return (
     <div className="admin-row-actions">
-      <button type="button" className="btn btn-sm btn-outline-secondary rounded-0" onClick={onDetail} title="Lihat detail">
-        Detail
-      </button>
+      {onDetail && (
+        <button type="button" className="btn btn-sm btn-outline-secondary rounded-0" onClick={onDetail} title="Lihat detail">
+          Detail
+        </button>
+      )}
       <button type="button" className="btn btn-sm btn-outline-dark rounded-0" onClick={onEdit} title="Ubah">
         Ubah
       </button>

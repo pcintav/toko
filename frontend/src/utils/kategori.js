@@ -1,18 +1,38 @@
 /**
  * utils/kategori.js — logika kategori produk dari data API.
  *
- * Mengekstrak daftar kategori unik, grid beranda, dan banner promo per kategori.
+ * Preferensi: daftar nama dari tabel master `kategori_produk` (GET /kategori).
+ * Fallback: unik dari kolom produk.kategori jika master belum termuat.
  * Dipakai TokoPage, HomePage, PromoKategori, KategoriGrid, useBerandaData.
  */
 export const LABEL_SEMUA = 'Semua';
 
-/** Kategori unik dari baris produk di database (urut abjad). */
+/**
+ * Nama kategori dari respons master API: [{ id, nama }, ...]
+ * @returns {string[]}
+ */
+export function namaDariMasterKategori(rows = []) {
+  return (rows || [])
+    .map((r) => (r && r.nama != null ? String(r.nama).trim() : ''))
+    .filter(Boolean);
+}
+
+/** Kategori unik dari baris produk (fallback jika master kosong). */
 export function kategoriDariProduk(produk = []) {
   const set = new Set();
   for (const p of produk) {
     if (p.kategori) set.add(p.kategori);
   }
   return [...set].sort((a, b) => a.localeCompare(b, 'id'));
+}
+
+/**
+ * Daftar filter tab: utamakan master; jika master kosong pakai dari produk.
+ */
+export function daftarFilterKategori(masterRows = [], produk = []) {
+  const dariMaster = namaDariMasterKategori(masterRows);
+  if (dariMaster.length > 0) return dariMaster;
+  return kategoriDariProduk(produk);
 }
 
 /** Satu produk per kategori (untuk banner promo di beranda). */

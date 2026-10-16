@@ -14,11 +14,13 @@ export default function ProductCard({ produk }) {
   const navigate = useNavigate();
   const { isPembeli } = useAuth();
   const detailTo = `/produk/${produk.id_produk}`;
+  const habis = (produk.stok ?? 0) < 1;
 
   // Navigasi checkout atau login dengan redirect kembali
   const onBeli = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (habis) return;
     const target = belanjaUrl(produk.id_produk);
     if (isPembeli) {
       navigate(target);
@@ -32,18 +34,27 @@ export default function ProductCard({ produk }) {
       <Link to={detailTo} className="product-card-link">
         <div className="product-card-img-wrap">
           <img src={mediaUrl(produk.gambar)} alt={produk.nama_produk} loading="lazy" />
+          {habis && <span className="product-card-badge">Habis</span>}
         </div>
         <div className="product-card-body">
           <h3 className="product-title">{produk.nama_produk}</h3>
           <span className="product-price">{formatRupiah(produk.harga)}</span>
+          <span className="product-stok small text-secondary d-block mt-1">
+            Stok: {produk.stok ?? 0}
+          </span>
         </div>
       </Link>
       <div className="product-card-actions">
         <Link to={detailTo} className="btn btn-sm btn-outline-dark rounded-0 flex-grow-1">
           Detail
         </Link>
-        <button type="button" className="btn btn-sm btn-dark rounded-0 flex-grow-1" onClick={onBeli}>
-          Beli
+        <button
+          type="button"
+          className="btn btn-sm btn-dark rounded-0 flex-grow-1"
+          onClick={onBeli}
+          disabled={habis}
+        >
+          {habis ? 'Habis' : 'Beli'}
         </button>
       </div>
     </article>

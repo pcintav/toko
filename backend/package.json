@@ -7,7 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "db:migrate-foto-bukti": "node scripts/migrate-foto-bukti.js"
+    "db:migrate-foto-bukti": "node scripts/migrate-foto-bukti.js",
+    "db:migrate-stok-aktif": "node scripts/migrate-produk-stok-aktif.js",
+    "db:migrate-bank-atas-nama": "node scripts/migrate-bank-atas-nama.js",
+    "db:seed-demo": "node scripts/seed-demo-isi.js"
   },
   "keywords": [],
   "author": "",

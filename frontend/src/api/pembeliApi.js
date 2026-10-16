@@ -22,7 +22,13 @@ export const pembeliApi = {
   // -------------------------------------------------------------------------
   // Katalog — PembeliBelanjaPage (bisa juga pakai api.getProduk dari client)
   // -------------------------------------------------------------------------
-  getProduk: () => apiRequest('/api/users/produk'),
+  getProduk: (params = {}) => {
+    const qs = new URLSearchParams();
+    if (params.q) qs.set('q', params.q);
+    if (params.kategori) qs.set('kategori', params.kategori);
+    const q = qs.toString();
+    return apiRequest(`/api/users/produk${q ? `?${q}` : ''}`);
+  },
   getProdukById: (id) => apiRequest(`/api/users/produk/${id}`),
 
   // -------------------------------------------------------------------------
@@ -35,9 +41,19 @@ export const pembeliApi = {
   // id_pembeli TIDAK dikirim — diambil dari JWT di backend
   createPembelian: (payload) =>
     apiRequest('/api/users/pembelian', { method: 'POST', body: JSON.stringify(payload) }),
+  // PUT /api/users/pembelian/:id/bukti — unggah/ganti bukti transfer
+  updateBukti: (id, foto_bukti) =>
+    apiRequest(`/api/users/pembelian/${id}/bukti`, {
+      method: 'PUT',
+      body: JSON.stringify({ foto_bukti }),
+    }),
 
-  // GET /api/users/info-toko — rekening bank untuk BankTransferInfo saat checkout
+  // GET /api/users/info-toko — + banks[] untuk BankTransferInfo saat checkout
   getInfoToko: () => apiRequest('/api/users/info-toko'),
+  // Master data (tabel kategori_produk, pengiriman, bank)
+  getKategori: () => apiRequest('/api/users/kategori'),
+  getPengiriman: () => apiRequest('/api/users/pengiriman'),
+  getBank: () => apiRequest('/api/users/bank'),
 
   /**
    * POST /api/users/upload-gambar — multipart, field "gambar".

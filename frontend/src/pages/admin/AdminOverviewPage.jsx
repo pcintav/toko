@@ -72,9 +72,14 @@ export default function AdminOverviewPage() {
       <div className="admin-panel mt-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h2 className="admin-section-title mb-0">Transaksi terbaru</h2>
-          <Link to="/admin/pembelian" className="btn btn-sm btn-outline-dark rounded-0">
-            Lihat semua
-          </Link>
+          <div className="d-flex gap-2">
+            <Link to="/admin/laporan" className="btn btn-sm btn-outline-dark rounded-0">
+              Laporan
+            </Link>
+            <Link to="/admin/pembelian" className="btn btn-sm btn-outline-dark rounded-0">
+              Kelola
+            </Link>
+          </div>
         </div>
         {(data.transaksi_terbaru || []).length === 0 ? (
           <p className="text-secondary mb-0">Belum ada pesanan.</p>

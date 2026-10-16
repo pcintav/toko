@@ -61,9 +61,12 @@ exports.findPembelianById = (id) => {
         p.updated_at,
         pr.nama_produk AS nama_produk,
         pr.harga AS harga,
-        pr.gambar AS gambar_produk
+        pr.gambar AS gambar_produk,
+        u.email AS email_pembeli,
+        u.uname AS uname_pembeli
       FROM pembelian p
       INNER JOIN produk pr ON pr.id_produk = p.id_produk
+      INNER JOIN users u ON u.id = p.id_pembeli
       WHERE p.id = ?
       LIMIT 1
     `;
@@ -111,6 +114,21 @@ exports.updatePembelianAdminFields = (id, fields) => {
       if (err) return reject(err);
       resolve(result);
     });
+  });
+};
+
+/** Pembeli unggah/ganti bukti transfer pada pesanan miliknya. */
+exports.updateFotoBuktiByPembeli = (id, id_pembeli, foto_bukti) => {
+  return new Promise((resolve, reject) => {
+    db.query(
+      `UPDATE pembelian SET foto_bukti = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ? AND id_pembeli = ?`,
+      [foto_bukti, id, id_pembeli],
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      }
+    );
   });
 };
 

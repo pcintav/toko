@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Env (jangan commit secret atau URL mesin sendiri)
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env.development
+frontend/.env.production
+frontend/.env.development.local
+frontend/.env.production.local
+
+# Build
+frontend/dist/
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Uploads lokal (biarkan placeholder jika ada)
+backend/uploads/images/*
+!backend/uploads/images/.gitignore
+!backend/uploads/images/placeholder.png
+
+# Arsip sementara
+*.zip

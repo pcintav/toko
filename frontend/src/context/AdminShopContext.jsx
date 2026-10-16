@@ -1,7 +1,7 @@
 /**
  * context/AdminShopContext.jsx — konteks info toko untuk panel admin.
  *
- * Memuat data info toko sekali (nama, logo, rekening) agar form admin konsisten.
+ * Memuat data info toko sekali (nama, logo; banks[] dari tabel bank) agar sidebar konsisten.
  * Hanya aktif di dalam AdminLayout; terhubung ke adminApi.getInfoToko.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
