@@ -9,6 +9,20 @@ Cocok untuk belajar fullstack maupun untuk dijalankan di komputer sendiri. Backe
 | Toko (browser) | http://localhost:5173 |
 | API | http://localhost:5000 |
 
+## Tampilan halaman publik
+
+Beranda (`/`)
+
+![Beranda](screenshot/beranda.png)
+
+Halaman produk (`/toko`)
+
+![Halaman produk](screenshot/produk.png)
+
+Halaman artikel (`/artikel`)
+
+![Halaman artikel](screenshot/artikel.png)
+
 ---
 
 ## Yang bisa dilakukan
