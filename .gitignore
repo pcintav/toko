@@ -29,3 +29,8 @@ backend/uploads/images/*
 
 # Arsip sementara
 *.zip
+
+# Dokumentasi lokal, tidak diunggah
+backend/docs/
+CONTRIBUTING.md
+frontend/README.md

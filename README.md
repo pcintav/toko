@@ -225,14 +225,12 @@ toko/
 │   ├── controllers/         Aturan bisnis
 │   ├── models/              Query database
 │   ├── database/            Skema, migrasi, dan seed
-│   ├── docs/ALUR-CODING.md  Penjelasan alur untuk belajar
 │   └── .env.example         Contoh konfigurasi (salin jadi .env)
 ├── frontend/                Tampilan React
 │   └── src/
 │       ├── pages/           Halaman publik, admin, dan pembeli
 │       ├── api/             Pemanggilan API
 │       └── components/
-├── CONTRIBUTING.md
 └── LICENSE
 ```
 
@@ -273,12 +271,6 @@ VITE_API_URL=https://api.domain-anda.com
 Hasil build ada di `frontend/dist`. Di server, jalankan backend dengan `npm start` (bukan `npm run dev`), ganti `JWT_SECRET`, dan jangan mengunggah file `.env`.
 
 ---
-
-## Untuk yang ingin memahami kodenya
-
-Baca [backend/docs/ALUR-CODING.md](backend/docs/ALUR-CODING.md). Dokumen itu menjelaskan perjalanan data dari halaman React sampai query MySQL.
-
-Kontribusi: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Lisensi
 
